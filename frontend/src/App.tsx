@@ -6,6 +6,10 @@ import Dashboard from './pages/Dashboard/Dashboard';
 import { useAuthStore } from './store/auth';
 import Admins from './pages/Admins/Admins';
 import type { JSX } from 'react/jsx-runtime';
+import Clients from './pages/Clients/Clients';
+import Masters from './pages/Masters/Masters';
+import Services from './pages/Services/Services';
+import Businesses from './pages/Business/Business';
 
 function ProtectedRoute({ children }: { children: JSX.Element }) {
   const { isAuthenticated } = useAuthStore();
@@ -28,13 +32,14 @@ function App() {
             }
           >
             <Route index element={<Dashboard />} />
-            <Route path="clients" element={<div>Клиенты (в разработке)</div>} />
-            <Route path="masters" element={<div>Мастера (в разработке)</div>} />
-            <Route path="services" element={<div>Услуги (в разработке)</div>} />
+            <Route path="clients" element={<Clients />} />
+            <Route path="masters" element={<Masters />} />
+            <Route path="services" element={<Services />} />
             <Route path="slots" element={<div>Слоты (в разработке)</div>} />
             <Route path="orders" element={<div>Записи (в разработке)</div>} />
             <Route path="reports" element={<div>Отчёты (в разработке)</div>} />
             <Route path="admins" element={<Admins />} />
+            <Route path="businesses" element={<Businesses />} />
           </Route>
         </Routes>
       </BrowserRouter>

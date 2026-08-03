@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import styles from './Layout.module.css';
 
 const navItems = [
+  { path: '/businesses', label: 'Салоны', icon: '🏢' },
   { path: '/', label: 'Дашборд', icon: '📊' },
   { path: '/clients', label: 'Клиенты', icon: '👥' },
   { path: '/masters', label: 'Мастера', icon: '👨‍' },

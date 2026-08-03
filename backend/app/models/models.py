@@ -1,6 +1,6 @@
 import enum
 from datetime import date, time, datetime
-from sqlalchemy import Integer, String, Boolean, DateTime, ForeignKey, Enum, BigInteger, Date, Time, Table, Column, \
+from sqlalchemy import Integer, String, Boolean, DateTime, ForeignKey, Enum, Date, Time, Table, Column, \
     UniqueConstraint
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from app.database.session import Base
@@ -58,7 +58,7 @@ class Admin(Base):
     __tablename__ = "admins"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
-    telegram_id: Mapped[int | None] = mapped_column(BigInteger, unique=True, nullable=True, index=True)
+    telegram_id: Mapped[int | None] = mapped_column(Integer, unique=True, nullable=True, index=True)
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
@@ -70,7 +70,7 @@ class Client(Base):
     __tablename__ = "clients"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False, index=True)
+    telegram_id: Mapped[int] = mapped_column(Integer, unique=True, nullable=False, index=True)
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)
     is_blocked: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
@@ -83,14 +83,13 @@ class Master(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)
-    telegram_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, unique=True, index=True)
+    telegram_id: Mapped[int | None] = mapped_column(Integer, nullable=True, unique=True, index=True)
     is_blocked: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 
     businesses = relationship("Business", secondary=master_business_association, back_populates="masters")
     services = relationship("ServiceMaster", back_populates="master")
     slots = relationship("Slot", back_populates="master")
-    # Убрали orders, так как связь идет через Slot
 
 
 class Service(Base):

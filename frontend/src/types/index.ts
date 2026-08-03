@@ -21,6 +21,8 @@ export interface Master {
   telegram_id: number | null;
   is_blocked: boolean;
   created_at: string;
+  service_ids: number[];
+  business_ids: number[];
 }
 
 export interface Service {

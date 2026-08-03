@@ -92,9 +92,11 @@ class ClientResponse(BaseModel):
 
 # --- Master ---
 class MasterCreate(BaseModel):
-    name: str
+    name: str = Field(min_length=2, max_length=100)
     phone: Optional[str] = None
-    telegram_id: Optional[int] = None
+    telegram_id: int = Field(description="Telegram ID мастера (обязательное поле)")
+    service_ids: list[int] = Field(default_factory=list, description="ID услуг мастера")
+    business_ids: list[int] = Field(default_factory=list, description="ID салонов мастера")
 
 
 class MasterResponse(BaseModel):
@@ -104,6 +106,8 @@ class MasterResponse(BaseModel):
     telegram_id: Optional[int]
     is_blocked: bool
     created_at: datetime
+    service_ids: list[int] = []
+    business_ids: list[int] = []
 
     class Config:
         from_attributes = True
