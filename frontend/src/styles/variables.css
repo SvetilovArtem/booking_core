@@ -1,0 +1,41 @@
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #e9ecef;
+  --text-primary: #212529;
+  --text-secondary: #6c757d;
+  --text-muted: #adb5bd;
+  --border-color: #dee2e6;
+  --accent: #4263eb;
+  --accent-hover: #3651d4;
+  --danger: #fa5252;
+  --success: #40c057;
+  --warning: #fab005;
+  --sidebar-bg: #f1f3f5;
+  --sidebar-text: #495057;
+  --sidebar-active: #4263eb;
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --input-bg: #ffffff;
+  --hover-bg: #f8f9fa;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #1a1b1e;
+  --bg-secondary: #25262b;
+  --bg-tertiary: #2c2e33;
+  --text-primary: #c1c2c5;
+  --text-secondary: #909296;
+  --text-muted: #5c5f66;
+  --border-color: #373a40;
+  --accent: #5c7cfa;
+  --accent-hover: #748ffc;
+  --danger: #ff6b6b;
+  --success: #51cf66;
+  --warning: #fcc419;
+  --sidebar-bg: #141517;
+  --sidebar-text: #909296;
+  --sidebar-active: #5c7cfa;
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --input-bg: #25262b;
+  --hover-bg: #2c2e33;
+}
