@@ -10,6 +10,7 @@ import Clients from './pages/Clients/Clients';
 import Masters from './pages/Masters/Masters';
 import Services from './pages/Services/Services';
 import Businesses from './pages/Business/Business';
+import Slots from './pages/Slots/Slots';
 
 function ProtectedRoute({ children }: { children: JSX.Element }) {
   const { isAuthenticated } = useAuthStore();
@@ -35,7 +36,7 @@ function App() {
             <Route path="clients" element={<Clients />} />
             <Route path="masters" element={<Masters />} />
             <Route path="services" element={<Services />} />
-            <Route path="slots" element={<div>Слоты (в разработке)</div>} />
+            <Route path="slots" element={<Slots />} />
             <Route path="orders" element={<div>Записи (в разработке)</div>} />
             <Route path="reports" element={<div>Отчёты (в разработке)</div>} />
             <Route path="admins" element={<Admins />} />

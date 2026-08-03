@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database.session import engine, Base
-from app.routes import admin, business, clients, masters, orders, relations, dashboard, services
+from app.routes import admin, business, clients, masters, orders, relations, dashboard, services, slots
 
 
 @asynccontextmanager
@@ -57,6 +57,7 @@ app.include_router(services.router)
 app.include_router(orders.router)
 app.include_router(relations.router)
 app.include_router(dashboard.router)
+app.include_router(slots.router)
 
 
 @app.get("/")
