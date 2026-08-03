@@ -17,6 +17,14 @@ export interface SlotBulkPayload {
   duration_minutes: number;
 }
 
+export interface DaySlot {
+    id: number;
+    master_id: number;
+    start_time: string;
+    end_time: string;
+    status: string;
+  }
+
 export const slotsApi = {
   getStats: (params?: { master_id?: number; business_id?: number; date_from?: string; date_to?: string }) =>
     api.get<DayStats[]>('/slots/stats', { params }),
@@ -25,4 +33,6 @@ export const slotsApi = {
   getAll: (params?: { master_id?: number; business_id?: number; date_from?: string; date_to?: string }) =>
     api.get('/slots/', { params }),
   delete: (id: number) => api.delete(`/slots/${id}`),
+  getDaySlots: (params: { date: string; master_id?: number; business_id?: number }) =>
+    api.get<DaySlot[]>('/slots/day', { params }),
 };

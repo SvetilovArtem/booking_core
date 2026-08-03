@@ -3,7 +3,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval, getDay,
-  addMonths, subMonths, isWithinInterval, isSameDay,
+  addMonths, subMonths, isWithinInterval, isSameDay, parseISO,
 } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { slotsApi, type DayStats, type SlotBulkPayload } from '../../api/slots';
@@ -27,9 +27,16 @@ interface BulkForm {
   periods: TimePeriod[];
 }
 
+interface DaySlot {
+  id: number;
+  master_id: number;
+  start_time: string;
+  end_time: string;
+  status: string;
+}
+
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
-/** Генерирует список времён с шагом из периодов */
 function generateTimesFromPeriods(periods: TimePeriod[], slotMinutes: number): string[] {
   const times: string[] = [];
   for (const p of periods) {
@@ -45,10 +52,9 @@ function generateTimesFromPeriods(periods: TimePeriod[], slotMinutes: number): s
       cur += slotMinutes;
     }
   }
-  return [...new Set(times)].sort();
+  return Array.from(new Set(times)).sort();
 }
 
-/** Календарь выбора диапазона дат */
 function DateRangePicker({
   dateFrom,
   dateTo,
@@ -60,7 +66,6 @@ function DateRangePicker({
 }) {
   const [viewMonth, setViewMonth] = useState(dateFrom || new Date());
   const [hoverDate, setHoverDate] = useState<Date | null>(null);
-  // Флаг: если обе даты выбраны, следующий клик начинает новый выбор
   const [selectingEnd, setSelectingEnd] = useState(true);
 
   const days = useMemo((): CalendarCell[] => {
@@ -79,11 +84,9 @@ function DateRangePicker({
 
   const handleClick = (clicked: Date) => {
     if (!selectingEnd || !dateFrom) {
-      // Начало нового выбора
       onChange(clicked, clicked);
       setSelectingEnd(true);
     } else {
-      // Завершение диапазона
       const from = clicked < dateFrom ? clicked : dateFrom;
       const to = clicked < dateFrom ? dateFrom : clicked;
       onChange(from, to);
@@ -110,7 +113,6 @@ function DateRangePicker({
       }
     }
 
-    // Превью при наведении
     if (selectingEnd && dateFrom && hoverDate) {
       const previewStart = hoverDate < dateFrom ? hoverDate : dateFrom;
       const previewEnd = hoverDate < dateFrom ? dateFrom : hoverDate;
@@ -169,11 +171,17 @@ export default function Slots() {
   const [loading, setLoading] = useState(false);
   const [rangeFrom, setRangeFrom] = useState<Date | null>(null);
   const [rangeTo, setRangeTo] = useState<Date | null>(null);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [daySlots, setDaySlots] = useState<DaySlot[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
 
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm<BulkForm>({
     defaultValues: {
       duration_minutes: 60,
-      periods: [{ startTime: '09:00', endTime: '13:00' }, { startTime: '14:00', endTime: '18:00' }],
+      periods: [
+        { startTime: '09:00', endTime: '13:00' },
+        { startTime: '14:00', endTime: '18:00' },
+      ],
     },
   });
 
@@ -189,21 +197,22 @@ export default function Slots() {
     });
   }, []);
 
-  useEffect(() => {
-    const loadStats = async () => {
-      const params: Record<string, string | number> = {
-        date_from: format(startOfMonth(currentMonth), 'yyyy-MM-dd'),
-        date_to: format(endOfMonth(currentMonth), 'yyyy-MM-dd'),
-      };
-      if (filterMasterId !== '') params.master_id = filterMasterId;
-      if (filterBusinessId !== '') params.business_id = filterBusinessId;
-      try {
-        const res = await slotsApi.getStats(params);
-        setStats(res.data);
-      } catch { setStats([]); }
+  const loadStats = async () => {
+    const params: Record<string, string | number> = {
+      date_from: format(startOfMonth(currentMonth), 'yyyy-MM-dd'),
+      date_to: format(endOfMonth(currentMonth), 'yyyy-MM-dd'),
     };
-    loadStats();
-  }, [currentMonth, filterMasterId, filterBusinessId]);
+    if (filterMasterId !== '') params.master_id = filterMasterId;
+    if (filterBusinessId !== '') params.business_id = filterBusinessId;
+    try {
+      const res = await slotsApi.getStats(params);
+      setStats(res.data);
+    } catch {
+      setStats([]);
+    }
+  };
+
+  useEffect(() => { loadStats(); }, [currentMonth, filterMasterId, filterBusinessId]);
 
   const statsMap = useMemo(() => {
     const map: Record<string, DayStats> = {};
@@ -228,6 +237,48 @@ export default function Slots() {
   const handleRangeChange = (from: Date, to: Date) => {
     setRangeFrom(from);
     setRangeTo(to);
+  };
+
+  const openDayModal = async (dateStr: string) => {
+    setSelectedDay(dateStr);
+    setSlotsLoading(true);
+    try {
+      const res = await slotsApi.getDaySlots({
+        date: dateStr,
+        master_id: filterMasterId !== '' ? filterMasterId : undefined,
+        business_id: filterBusinessId !== '' ? filterBusinessId : undefined,
+      });
+      setDaySlots(res.data);
+    } catch {
+      toast.error('Ошибка загрузки слотов');
+      setDaySlots([]);
+    } finally {
+      setSlotsLoading(false);
+    }
+  };
+
+  const closeDayModal = () => {
+    setSelectedDay(null);
+    setDaySlots([]);
+  };
+
+  const cancelSlot = async (slotId: number) => {
+    if (!confirm('Отменить этот слот?')) return;
+    try {
+      await slotsApi.delete(slotId);
+      toast.success('Слот удалён');
+      if (selectedDay) {
+        const res = await slotsApi.getDaySlots({
+          date: selectedDay,
+          master_id: filterMasterId !== '' ? filterMasterId : undefined,
+          business_id: filterBusinessId !== '' ? filterBusinessId : undefined,
+        });
+        setDaySlots(res.data);
+      }
+      await loadStats();
+    } catch {
+      toast.error('Ошибка удаления слота');
+    }
   };
 
   const onSubmit = async (data: BulkForm) => {
@@ -269,18 +320,12 @@ export default function Slots() {
       setRangeFrom(null);
       setRangeTo(null);
       reset();
-
-      const params: Record<string, string | number> = {
-        date_from: format(startOfMonth(currentMonth), 'yyyy-MM-dd'),
-        date_to: format(endOfMonth(currentMonth), 'yyyy-MM-dd'),
-      };
-      if (filterMasterId !== '') params.master_id = filterMasterId;
-      if (filterBusinessId !== '') params.business_id = filterBusinessId;
-      const statsRes = await slotsApi.getStats(params);
-      setStats(statsRes.data);
+      await loadStats();
     } catch (err: any) {
       toast.error(err.response?.data?.detail || 'Ошибка создания слотов');
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const todayStr = format(new Date(), 'yyyy-MM-dd');
@@ -327,13 +372,11 @@ export default function Slots() {
               {errors.business_id && <span style={{ color: 'var(--danger)', fontSize: 12 }}>Обязательное поле</span>}
             </div>
 
-            {/* Календарь выбора диапазона */}
             <div className={styles.inputGroup}>
               <label className={styles.label}>Период дат *</label>
               <DateRangePicker dateFrom={rangeFrom} dateTo={rangeTo} onChange={handleRangeChange} />
             </div>
 
-            {/* Временные периоды */}
             <div className={styles.inputGroup}>
               <label className={styles.label}>Временные окна *</label>
               {fields.map((field, index) => (
@@ -352,7 +395,6 @@ export default function Slots() {
               {errors.periods && <span style={{ color: 'var(--danger)', fontSize: 12 }}>Заполните все периоды</span>}
             </div>
 
-            {/* Размер слота */}
             <div className={styles.inputGroup}>
               <label className={styles.label}>Размер слота (мин) *</label>
               <select className={styles.input} {...register('duration_minutes', { valueAsNumber: true, required: true })}>
@@ -377,7 +419,6 @@ export default function Slots() {
         </div>
       )}
 
-      {/* Основной календарь статистики */}
       <div className={styles.card}>
         <div className={styles.calendarNav}>
           <button className={styles.navBtn} onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>← Пред.</button>
@@ -393,7 +434,12 @@ export default function Slots() {
             const isToday = dateStr === todayStr;
             const cellDate = cell.date;
             return (
-              <div key={cell.key} className={`${styles.calendarCell} ${isToday ? styles.today : ''}`}>
+              <div
+                key={cell.key}
+                className={`${styles.calendarCell} ${isToday ? styles.today : ''}`}
+                style={{ cursor: dayStats && dayStats.total > 0 ? 'pointer' : 'default' }}
+                onClick={() => dayStats && dayStats.total > 0 && openDayModal(dateStr)}
+              >
                 <span className={styles.cellDate}>{format(cellDate, 'd')}</span>
                 <div className={styles.cellStats}>
                   {dayStats ? (
@@ -410,6 +456,47 @@ export default function Slots() {
           })}
         </div>
       </div>
+
+      {selectedDay && (
+        <div className={styles.modalOverlay} onClick={closeDayModal}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <span className={styles.modalTitle}>
+                Слоты на {format(parseISO(selectedDay), 'dd.MM.yyyy')}
+              </span>
+              <button className={styles.modalClose} onClick={closeDayModal}>✕</button>
+            </div>
+
+            {slotsLoading ? (
+              <div className={styles.emptyState}>Загрузка...</div>
+            ) : daySlots.length === 0 ? (
+              <div className={styles.emptyState}>Нет слотов на этот день</div>
+            ) : (
+              <div className={styles.slotList}>
+                {daySlots.map((slot) => (
+                  <div key={slot.id} className={styles.slotItem}>
+                    <span className={styles.slotTime}>
+                      {slot.start_time.slice(0, 5)} — {slot.end_time.slice(0, 5)}
+                    </span>
+                    <span className={`${styles.slotStatus} ${
+                      slot.status === 'available' ? styles.slotStatusAvailable
+                        : slot.status === 'booked' ? styles.slotStatusBooked
+                          : styles.slotStatusBlocked
+                    }`}>
+                      {slot.status === 'available' ? 'Свободен' : slot.status === 'booked' ? 'Занят' : 'Заблокирован'}
+                    </span>
+                    {slot.status === 'available' && (
+                      <button className={styles.cancelBtn} onClick={() => cancelSlot(slot.id)}>
+                        Отменить
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

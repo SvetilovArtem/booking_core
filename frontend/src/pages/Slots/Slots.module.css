@@ -293,3 +293,112 @@
     color: white !important;
     border-radius: 4px !important;
   }
+
+  /* Модальное окно */
+.modalOverlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  
+  .modal {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 24px;
+    min-width: 360px;
+    max-width: 480px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  
+  .modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  
+  .modalTitle {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  
+  .modalClose {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+  }
+  
+  .slotList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .slotItem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--bg-primary);
+  }
+  
+  .slotTime {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+  
+  .slotStatus {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+  }
+  
+  .slotStatusAvailable {
+    background-color: var(--success);
+    color: white;
+  }
+  
+  .slotStatusBooked {
+    background-color: var(--danger);
+    color: white;
+  }
+  
+  .slotStatusBlocked {
+    background-color: var(--text-muted);
+    color: white;
+  }
+  
+  .cancelBtn {
+    padding: 4px 10px;
+    font-size: 12px;
+    border: 1px solid var(--danger);
+    border-radius: 4px;
+    background: none;
+    color: var(--danger);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .cancelBtn:hover {
+    background-color: var(--danger);
+    color: white;
+  }
+  
+  .cancelBtn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }

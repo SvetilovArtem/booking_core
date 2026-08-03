@@ -1,6 +1,6 @@
 """Роуты для управления слотами. Одиночное/массовое создание + статистика по дням."""
 
-from datetime import date, time, timedelta
+from datetime import date, time, timedelta, datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
@@ -127,6 +127,27 @@ async def create_slots_bulk(payload: SlotBulkCreate, db: AsyncSession = Depends(
 
         current_date += timedelta(days=1)
 
+    today = date.today()
+    now_time = datetime.now().time()
+
+    while current_date <= payload.date_to:
+        if current_date < today:
+            current_date += timedelta(days=1)
+            continue
+
+        for start_str in payload.times:
+            h, m = map(int, start_str.split(":"))
+            start_t = time(h, m)
+            end_minutes = h * 60 + m + payload.duration_minutes
+            if end_minutes >= 24 * 60:
+                skipped_count += 1
+                continue
+            end_t = time(end_minutes // 60, end_minutes % 60)
+
+            # Пропускаем слоты в текущем дне, которые уже начались
+            if current_date == today and start_t < now_time:
+                skipped_count += 1
+                continue
     await db.commit()
     return {"created": created_count, "skipped": skipped_count}
 
@@ -165,6 +186,32 @@ async def list_slots(
         for s in slots
     ]
 
+@router.get("/day")
+async def get_day_slots(
+    date: str,
+    master_id: int | None = None,
+    business_id: int | None = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """Все слоты за конкретный день для модального окна."""
+    query = select(Slot).where(Slot.date == date).order_by(Slot.start_time)
+    if master_id:
+        query = query.where(Slot.master_id == master_id)
+    if business_id:
+        query = query.where(Slot.business_id == business_id)
+
+    result = await db.execute(query)
+    slots = result.scalars().all()
+    return [
+        {
+            "id": s.id,
+            "master_id": s.master_id,
+            "start_time": str(s.start_time),
+            "end_time": str(s.end_time),
+            "status": s.status.value if hasattr(s.status, "value") else s.status,
+        }
+        for s in slots
+    ]
 
 @router.delete("/{slot_id}", status_code=204)
 async def delete_slot(slot_id: int, db: AsyncSession = Depends(get_db)):
